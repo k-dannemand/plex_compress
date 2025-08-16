@@ -120,9 +120,10 @@ if [ "$INTERACTIVE" = true ]; then
             --delimiter=$'\t' \
             --with-nth=1,2 \
             --preview '
-                # Get file path directly from the second field
-                FILE=$(echo "{2}")
-                echo "Debug - Field 2 (file path): $FILE"
+                # Get file path directly from the second field and remove quotes
+                FILE=$(echo "{2}" | sed "s/^'"'"'//; s/'"'"'$//")
+                echo "Debug - Field 2 (file path): {2}"
+                echo "Debug - After quote removal: $FILE"
                 echo "---"
                 
                 if [ -f "$FILE" ]; then
@@ -144,6 +145,8 @@ if [ "$INTERACTIVE" = true ]; then
                     fi
                 else
                     echo "❌ File not found: $FILE"
+                    echo "Trying to list directory: $(dirname "$FILE")"
+                    ls -la "$(dirname "$FILE")" 2>/dev/null || echo "Directory not accessible"
                 fi
             ' \
             --preview-window=down:wrap |

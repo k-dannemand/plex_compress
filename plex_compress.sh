@@ -1,46 +1,46 @@
 #!/bin/bash
 
-# === Konfiguration ===
+# === Configuration ===
 SOURCE_DIR="${SOURCE_DIR:-/whirlpool/media/data/movies}"
 DRYRUN=false
 INTERACTIVE=false
-SIZE_LIMIT="+10G" # Minimum filstørrelse for cron/auto mode
+SIZE_LIMIT="+10G" # Minimum file size for cron/auto mode
 
-# === Funktioner ===
+# === Functions ===
 show_help() {
     cat << EOF
-Brug: $0 [OPTIONER]
+Usage: $0 [OPTIONS]
 
-OPTIONER:
-    -d, --dry-run        Simuler handlinger uden at ændre filer
-    -i, --interactive    Interaktivt valg af filer med fzf og preview
-    -s, --source DIR     Angiv kildemappe (standard: $SOURCE_DIR)
-    -h, --help           Vis denne hjælp
+OPTIONS:
+    -d, --dry-run        Simulate actions without changing files
+    -i, --interactive    Interactive file selection with fzf and preview
+    -s, --source DIR     Specify source directory (default: $SOURCE_DIR)
+    -h, --help           Show this help
 
-MILJØVARIABLER:
-    SOURCE_DIR          Overstyr standard kildemappe
-    ENCODER            Overstyr encoder (x264/x265)
-    Q                  Overstyr kvalitet (standard: auto)
-    EPRESET           Overstyr encoder preset (standard: fast)
+ENVIRONMENT VARIABLES:
+    SOURCE_DIR          Override default source directory
+    ENCODER            Override encoder (x264/x265)
+    Q                  Override quality (default: auto)
+    EPRESET           Override encoder preset (default: fast)
 
-EKSEMPLER:
-    $0                              # Automatisk konvertering
-    $0 --interactive                # Interaktivt valg
-    $0 --dry-run --source /movies   # Test med anden mappe
+EXAMPLES:
+    $0                              # Automatic conversion
+    $0 --interactive                # Interactive selection
+    $0 --dry-run --source /movies   # Test with different directory
 EOF
 }
 
-# --- Parametre ---
+# --- Parameters ---
 while [[ $# -gt 0 ]]; do
     case $1 in
         -d|--dry-run)
             DRYRUN=true
-            echo "=== DRY-RUN tilstand ==="
+            echo "=== DRY-RUN mode ==="
             shift
             ;;
         -i|--interactive)
             INTERACTIVE=true
-            echo "=== INTERAKTIV tilstand ==="
+            echo "=== INTERACTIVE mode ==="
             shift
             ;;
         -s|--source)
@@ -52,20 +52,20 @@ while [[ $# -gt 0 ]]; do
             exit 0
             ;;
         *)
-            echo "Ukendt option: $1"
+            echo "Unknown option: $1"
             show_help
             exit 1
             ;;
     esac
 done
 
-# === Validering ===
+# === Validation ===
 if [ ! -d "$SOURCE_DIR" ]; then
-    echo "Fejl: Kildemappe '$SOURCE_DIR' findes ikke."
+    echo "Error: Source directory '$SOURCE_DIR' does not exist."
     exit 1
 fi
 
-# --- Afhængighedstjek ---
+# --- Dependency check ---
 REQUIRED_DEPS=(HandBrakeCLI)
 if [ "$INTERACTIVE" = true ]; then
     REQUIRED_DEPS+=(fzf mediainfo numfmt)
@@ -75,14 +75,14 @@ fi
 
 for cmd in "${REQUIRED_DEPS[@]}"; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
-        echo "Fejl: '$cmd' er ikke installeret."
-        echo "For interaktiv tilstand kræves: HandBrakeCLI, fzf, mediainfo, numfmt"
-        echo "For auto-tilstand kræves: HandBrakeCLI, numfmt"
+        echo "Error: '$cmd' is not installed."
+        echo "For interactive mode requires: HandBrakeCLI, fzf, mediainfo, numfmt"
+        echo "For auto mode requires: HandBrakeCLI, numfmt"
         exit 1
     fi
 done
 
-# --- Auto-vælg encoder baseret på CPU (kan overstyres via ENV) ---
+# --- Auto-select encoder based on CPU (can be overridden via ENV) ---
 if [ -f /proc/cpuinfo ]; then
     CPU_FLAGS=$(grep -m1 -oE 'avx2|fma|sse4_2' /proc/cpuinfo 2>/dev/null | tr '\n' ' ')
     if echo "$CPU_FLAGS" | grep -qi 'avx2'; then
@@ -95,17 +95,17 @@ if [ -f /proc/cpuinfo ]; then
         : "${EPRESET:=fast}"
     fi
 else
-    # Fallback for systemer uden /proc/cpuinfo (fx macOS)
-    echo "Advarsel: Kan ikke detektere CPU-funktioner. Bruger x264 som standard."
+    # Fallback for systems without /proc/cpuinfo (e.g. macOS)
+    echo "Warning: Cannot detect CPU features. Using x264 as default."
     : "${ENCODER:=x264}"
     : "${Q:=20}"
     : "${EPRESET:=fast}"
 fi
-echo "Encoder-valg: $ENCODER (q=$Q, preset=$EPRESET)"
+echo "Encoder selection: $ENCODER (q=$Q, preset=$EPRESET)"
 
-# --- Find filer ---
+# --- Find files ---
 if [ "$INTERACTIVE" = true ]; then
-    # Interaktiv: vis alle MKV/MP4, størrelsessorteret, preview i bunden
+    # Interactive: show all MKV/MP4, sorted by size, preview at bottom
     mapfile -d '' -t SELECTED_FILES < <(
         find "$SOURCE_DIR" -type f \( -iname "*.mkv" -o -iname "*.mp4" \) \
             -printf "%s\t%p\0" |
@@ -120,88 +120,88 @@ if [ "$INTERACTIVE" = true ]; then
             --delimiter=$'\t' \
             --preview '
                 FILE=$(echo {} | cut -f2-)
-                echo "� Fil: $FILE"
-                echo "� Størrelse: $(stat -c %s "$FILE" | numfmt --to=iec --suffix=B)"
+                echo "📁 File: $FILE"
+                echo "📏 Size: $(stat -c %s "$FILE" | numfmt --to=iec --suffix=B)"
                 echo
                 mediainfo --Inform="
-                    General;� Format: %{Format}
-                    � Bitrate: %{OverallBitRate/String}
-                    ⏱ Varighed: %{Duration/String}
+                    General;🎬 Format: %{Format}
+                    📊 Bitrate: %{OverallBitRate/String}
+                    ⏱ Duration: %{Duration/String}
 
-                    Video;� Video: %{Format} %{Width}x%{Height} %{FrameRate/String}
+                    Video;🎥 Video: %{Format} %{Width}x%{Height} %{FrameRate/String}
 
-                    Audio;� Lydspor: %{Format} %{Channel(s)/String} (%{Language})
+                    Audio;🔊 Audio: %{Format} %{Channel(s)/String} (%{Language})
                 " "$FILE" 2>/dev/null
             ' \
             --preview-window=down:wrap |
         awk -v RS='\0' -v ORS='\0' -F'\t' '{print $2}'
     )
 else
-    # Cron/auto: kun store filer
+    # Cron/auto: only large files
     mapfile -d '' -t SELECTED_FILES < <(
         find "$SOURCE_DIR" -type f \( -iname "*.mkv" -o -iname "*.mp4" \) -size "$SIZE_LIMIT" -print0
     )
 fi
 
-# --- Hvis ingen filer fundet ---
+# --- If no files found ---
 if [ ${#SELECTED_FILES[@]} -eq 0 ]; then
-    echo "Ingen filer fundet til konvertering i '$SOURCE_DIR'."
+    echo "No files found for conversion in '$SOURCE_DIR'."
     if [ "$INTERACTIVE" != true ]; then
-        echo "Tip: Prøv --interactive for at vælge filer manuelt."
+        echo "Tip: Try --interactive to select files manually."
     fi
     exit 0
 fi
 
-echo "Fandt ${#SELECTED_FILES[@]} fil(er) til behandling."
+echo "Found ${#SELECTED_FILES[@]} file(s) for processing."
 
-# --- Behandl de valgte filer ---
+# --- Process selected files ---
 PROCESSED=0
 SKIPPED=0
 FAILED=0
 
 for FILE in "${SELECTED_FILES[@]}"; do
-    [ -f "$FILE" ] || { echo "Springer over: $FILE (ikke en fil)"; ((SKIPPED++)); continue; }
+    [ -f "$FILE" ] || { echo "Skipping: $FILE (not a file)"; ((SKIPPED++)); continue; }
 
     DIRNAME=$(dirname "$FILE")
     BASENAME=$(basename "$FILE")
     NAME="${BASENAME%.*}"
     OUT_FINAL="$DIRNAME/${NAME}.mp4"
-    # Brug PID for at undgå navnekollisioner
+    # Use PID to avoid name collisions
     TEMP_FILE="$DIRNAME/${NAME}_temp_$$.mp4"
 
     echo ""
-    echo "=== Fil $((PROCESSED + SKIPPED + FAILED + 1))/${#SELECTED_FILES[@]}: $BASENAME ==="
+    echo "=== File $((PROCESSED + SKIPPED + FAILED + 1))/${#SELECTED_FILES[@]}: $BASENAME ==="
 
-    # Skip hvis output allerede findes
+    # Skip if output already exists
     if [ -f "$OUT_FINAL" ]; then
-        echo "Springer over: Output findes allerede ($OUT_FINAL)"
+        echo "Skipping: Output already exists ($OUT_FINAL)"
         ((SKIPPED++))
         continue
     fi
 
-    # Tjek skriveadgang (uden sudo)
+    # Check write access (without sudo)
     if [ ! -w "$DIRNAME" ] || [ ! -w "$FILE" ]; then
-        echo "Mangler skriveadgang til '$DIRNAME' eller '$FILE'."
-        echo "Kør i stedet: sudo -E \"$0\" $([ "$INTERACTIVE" = true ] && echo -i) $([ "$DRYRUN" = true ] && echo -d)"
+        echo "Missing write access to '$DIRNAME' or '$FILE'."
+        echo "Run instead: sudo -E \"$0\" $([ "$INTERACTIVE" = true ] && echo -i) $([ "$DRYRUN" = true ] && echo -d)"
         ((FAILED++))
         continue
     fi
 
     if [ "$DRYRUN" = true ]; then
-        echo "[DRY-RUN] Ville konvertere: $FILE"
-        echo "[DRY-RUN] Ville gemme som: $TEMP_FILE"
-        echo "[DRY-RUN] Efter succes: slette original og omdøbe til: $OUT_FINAL"
+        echo "[DRY-RUN] Would convert: $FILE"
+        echo "[DRY-RUN] Would save as: $TEMP_FILE"
+        echo "[DRY-RUN] After success: delete original and rename to: $OUT_FINAL"
         ((PROCESSED++))
         continue
     fi
 
-    # Vis filstørrelse før konvertering
+    # Show file size before conversion
     ORIGINAL_SIZE=$(stat -c%s "$FILE" 2>/dev/null || echo "0")
     ORIGINAL_SIZE_H=$(echo "$ORIGINAL_SIZE" | numfmt --to=iec --suffix=B)
-    echo "Original størrelse: $ORIGINAL_SIZE_H"
+    echo "Original size: $ORIGINAL_SIZE_H"
     
-    echo "Konverterer: $FILE"
-    echo "Kommando: HandBrakeCLI -i \"$FILE\" -o \"$TEMP_FILE\" -e $ENCODER -q $Q --encoder-preset $EPRESET --optimize -E ac3 --audio-copy-mask ac3 --audio-fallback ac3"
+    echo "Converting: $FILE"
+    echo "Command: HandBrakeCLI -i \"$FILE\" -o \"$TEMP_FILE\" -e $ENCODER -q $Q --encoder-preset $EPRESET --optimize -E ac3 --audio-copy-mask ac3 --audio-fallback ac3"
     
     HandBrakeCLI \
         -i "$FILE" \
@@ -214,42 +214,42 @@ for FILE in "${SELECTED_FILES[@]}"; do
 
     HB_STATUS=$?
 
-    # Sikkerheds-tjek: kun succes hvis exit=0 OG outputfil findes og har indhold
+    # Safety check: only success if exit=0 AND output file exists and has content
     if [ $HB_STATUS -eq 0 ] && [ -s "$TEMP_FILE" ]; then
-        # Vis størrelsesforskel
+        # Show size difference
         NEW_SIZE=$(stat -c%s "$TEMP_FILE" 2>/dev/null || echo "0")
         NEW_SIZE_H=$(echo "$NEW_SIZE" | numfmt --to=iec --suffix=B)
         if [ "$ORIGINAL_SIZE" -gt 0 ] && [ "$NEW_SIZE" -gt 0 ]; then
             SAVINGS=$((ORIGINAL_SIZE - NEW_SIZE))
             SAVINGS_H=$(echo "$SAVINGS" | numfmt --to=iec --suffix=B)
             PERCENT=$((SAVINGS * 100 / ORIGINAL_SIZE))
-            echo "Ny størrelse: $NEW_SIZE_H (sparet: $SAVINGS_H, $PERCENT%)"
+            echo "New size: $NEW_SIZE_H (saved: $SAVINGS_H, $PERCENT%)"
         fi
         
-        echo "Konvertering OK – sletter original og flytter ny fil"
+        echo "Conversion OK – deleting original and moving new file"
         if rm -f -- "$FILE"; then
             if mv -f -- "$TEMP_FILE" "$OUT_FINAL"; then
-                echo "Succes: $OUT_FINAL"
+                echo "Success: $OUT_FINAL"
                 ((PROCESSED++))
             else
-                echo "Fejl: kunne ikke flytte $TEMP_FILE til $OUT_FINAL"
+                echo "Error: could not move $TEMP_FILE to $OUT_FINAL"
                 ((FAILED++))
             fi
         else
-            echo "Fejl: kunne ikke slette original (rettigheder?)"
+            echo "Error: could not delete original (permissions?)"
             ((FAILED++))
         fi
     else
-        echo "Konvertering FEJLEDE – original beholdes. (exit status: $HB_STATUS)"
+        echo "Conversion FAILED – original kept. (exit status: $HB_STATUS)"
         [ -f "$TEMP_FILE" ] && rm -f -- "$TEMP_FILE"
         ((FAILED++))
     fi
 done
 
-# === Sammendrag ===
+# === Summary ===
 echo ""
-echo "=== SAMMENDRAG ==="
-echo "Behandlede filer: $PROCESSED"
-echo "Sprunget over: $SKIPPED"
-echo "Fejlede: $FAILED"
+echo "=== SUMMARY ==="
+echo "Processed files: $PROCESSED"
+echo "Skipped: $SKIPPED"
+echo "Failed: $FAILED"
 echo "Total: ${#SELECTED_FILES[@]}"

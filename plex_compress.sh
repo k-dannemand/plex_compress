@@ -118,10 +118,9 @@ if [ "$INTERACTIVE" = true ]; then
         }' |
         fzf --multi --read0 --print0 \
             --delimiter=$'\t' \
-            --with-nth=1 \
             --preview '
-                # More robust file path extraction
-                FILE=$(echo {} | sed "s/^[^\t]*\t//")
+                # Extract file path after tab character
+                FILE=$(echo "{}" | cut -d$'\''\t'\'' -f2)
                 if [ -f "$FILE" ]; then
                     echo "📁 File: $FILE"
                     echo "📏 Size: $(stat -c %s "$FILE" 2>/dev/null | numfmt --to=iec --suffix=B 2>/dev/null || echo "Unknown")"

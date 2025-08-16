@@ -119,8 +119,26 @@ if [ "$INTERACTIVE" = true ]; then
         fzf --multi --read0 --print0 \
             --delimiter=$'\t' \
             --preview '
-                # Extract file path after tab character
-                FILE=$(echo "{}" | cut -d$'\''\t'\'' -f2)
+                # Debug and extract file path - try multiple methods
+                echo "Debug - Raw input: {}"
+                echo "---"
+                
+                # Method 1: awk to split on tab
+                FILE=$(echo "{}" | awk -F"\t" "{print \$2}")
+                
+                # Method 2: If first method fails, try sed
+                if [ -z "$FILE" ] || [ ! -f "$FILE" ]; then
+                    FILE=$(echo "{}" | sed "s/^[^$(echo -e "\t")]*$(echo -e "\t")//")
+                fi
+                
+                # Method 3: If still fails, try different approach
+                if [ -z "$FILE" ] || [ ! -f "$FILE" ]; then
+                    FILE=$(echo "{}" | cut -s -f2-)
+                fi
+                
+                echo "Extracted file path: $FILE"
+                echo "---"
+                
                 if [ -f "$FILE" ]; then
                     echo "📁 File: $FILE"
                     echo "📏 Size: $(stat -c %s "$FILE" 2>/dev/null | numfmt --to=iec --suffix=B 2>/dev/null || echo "Unknown")"

@@ -16,13 +16,26 @@ Et Bash-script til at komprimere store videofiler (MKV/MP4) i et Plex-bibliotek 
 - mediainfo (kun interaktiv)
 - numfmt
 
+
+## Oversigt over flag
+
+| Flag              | Kort version | Funktion                                                      |
+|-------------------|--------------|---------------------------------------------------------------|
+| `--dry-run`       | `-d`         | Simulerer handlinger uden at ændre filer                      |
+| `--interactive`   | `-i`         | Interaktivt valg af filer med fzf og preview                  |
+
+Du kan kombinere flag, fx både køre interaktivt og i dry-run:
+
+```bash
+./plex_compress.sh --interactive --dry-run
+```
+
 ## Brug
 ```bash
 ./plex_compress.sh [--dry-run|-d] [--interactive|-i]
 ```
 
-- `--dry-run` / `-d`: Simuler handlinger uden at ændre filer
-- `--interactive` / `-i`: Vælg filer manuelt med fzf og preview
+Se tabellen ovenfor for detaljer om de enkelte flag.
 
 ## Eksempler
 - Automatisk komprimering af store filer:

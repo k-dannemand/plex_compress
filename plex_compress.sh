@@ -119,20 +119,21 @@ if [ "$INTERACTIVE" = true ]; then
         fzf --multi --read0 --print0 \
             --delimiter=$'\t' \
             --preview '
-                # Extract file path using awk to split on space
-                RAW_INPUT="{}"
-                # Remove quotes first
-                RAW_INPUT=$(echo "$RAW_INPUT" | sed "s/^'"'"'//; s/'"'"'$//")
-                # Use awk to get everything from field 2 onwards (skip size field)
-                FILE=$(echo "$RAW_INPUT" | awk "{for(i=2;i<=NF;i++) printf \"%s%s\", \$i, (i==NF?\"\":\" \")}")
+                # Get the original line with tab separator
+                FULL_LINE="{}"
+                echo "Debug - Full fzf line: $FULL_LINE"
                 
-                echo "Debug - Raw input: {}"
-                echo "Debug - After quote removal: $RAW_INPUT"
-                echo "Debug - Extracted file path: $FILE"
+                # Extract file path after tab character
+                FILE=$(echo "$FULL_LINE" | cut -d$'"'"'\t'"'"' -f2)
+                echo "Debug - File after tab cut: $FILE"
+                
+                # Remove any remaining quotes
+                FILE=$(echo "$FILE" | sed "s/^'"'"'//; s/'"'"'$//")
+                echo "Debug - Final file path: $FILE"
                 echo "---"
                 
                 if [ -f "$FILE" ]; then
-                    echo "📁 File: $FILE"
+                    echo "✅ File found: $FILE"
                     echo "📏 Size: $(stat -c %s "$FILE" 2>/dev/null | numfmt --to=iec --suffix=B 2>/dev/null || echo "Unknown")"
                     echo
                     if command -v mediainfo >/dev/null 2>&1; then
@@ -149,7 +150,9 @@ if [ "$INTERACTIVE" = true ]; then
                         echo "mediainfo not available"
                     fi
                 else
-                    echo "File not found: $FILE"
+                    echo "❌ File not found: $FILE"
+                    echo "Checking if directory exists: $(dirname "$FILE")"
+                    ls -la "$(dirname "$FILE")" 2>/dev/null | head -3
                 fi
             ' \
             --preview-window=down:wrap |

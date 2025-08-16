@@ -4,11 +4,15 @@ Et Bash-script til at komprimere store videofiler (MKV/MP4) i et Plex-bibliotek 
 
 ## Funktioner
 - **Automatisk valg af encoder** (x264/x265) baseret på CPU-understøttelse
-- **Interaktiv tilstand**: Vælg filer med fzf og se detaljeret preview (kræver fzf, mediainfo, numfmt)
+- **Konfigurerbar kildemappe** via flag eller miljøvariabel
+- **Intelligent afhængighedstjek** - kun hvad der kræves for den valgte tilstand
+- **Interaktiv tilstand**: Vælg filer med fzf og se detaljeret preview
 - **Cron/auto-tilstand**: Finder automatisk store videofiler (standard: >10GB)
 - **Dry-run**: Simulerer handlinger uden at ændre filer
-- **Sikkerhedstjek**: Skriveadgang og outputfil eksisterer ikke i forvejen
-- **Bevarer kun succesfulde konverteringer**
+- **Detaljeret progress**: Filstørrelse før/efter, besparelser og statistik
+- **Sikkerhedstjek**: Skriveadgang og collision-sikre temp-filer
+- **Fejlhåndtering**: Robust håndtering med statusrapport
+- **Help-system**: Indbygget hjælp og usage-information
 
 ## Afhængigheder
 - HandBrakeCLI
@@ -23,16 +27,18 @@ Et Bash-script til at komprimere store videofiler (MKV/MP4) i et Plex-bibliotek 
 |-------------------|--------------|---------------------------------------------------------------|
 | `--dry-run`       | `-d`         | Simulerer handlinger uden at ændre filer                      |
 | `--interactive`   | `-i`         | Interaktivt valg af filer med fzf og preview                  |
+| `--source DIR`    | `-s DIR`     | Angiv kildemappe (standard: /whirlpool/media/data/movies)     |
+| `--help`          | `-h`         | Vis hjælp og brug                                              |
 
 Du kan kombinere flag, fx både køre interaktivt og i dry-run:
 
 ```bash
-./plex_compress.sh --interactive --dry-run
+./plex_compress.sh --interactive --dry-run --source /min/film/mappe
 ```
 
 ## Brug
 ```bash
-./plex_compress.sh [--dry-run|-d] [--interactive|-i]
+./plex_compress.sh [OPTIONER]
 ```
 
 Se tabellen ovenfor for detaljer om de enkelte flag.
@@ -46,12 +52,17 @@ Se tabellen ovenfor for detaljer om de enkelte flag.
   ```bash
   ./plex_compress.sh --interactive
   ```
-- Simulering (ingen ændringer):
+- Simulering med anden mappe:
   ```bash
-  ./plex_compress.sh --dry-run
+  ./plex_compress.sh --dry-run --source /min/video/mappe
+  ```
+- Kombination af optioner:
+  ```bash
+  ./plex_compress.sh --interactive --dry-run --source /test
   ```
 
 ## Miljøvariabler
+- `SOURCE_DIR` (sti): Overstyr standard kildemappe
 - `ENCODER` (x264/x265): Overstyr automatisk encoder-valg
 - `Q` (kvalitet): Overstyr standard kvalitet (lavere = bedre kvalitet, større fil)
 - `EPRESET` (HandBrake preset): Overstyr preset (fx fast, medium)

@@ -118,18 +118,11 @@ if [ "$INTERACTIVE" = true ]; then
         }' |
         fzf --multi --read0 --print0 \
             --delimiter=$'\t' \
+            --with-nth=1,2 \
             --preview '
-                # Get the original line with tab separator
-                FULL_LINE="{}"
-                echo "Debug - Full fzf line: $FULL_LINE"
-                
-                # Extract file path after tab character
-                FILE=$(echo "$FULL_LINE" | cut -d$'"'"'\t'"'"' -f2)
-                echo "Debug - File after tab cut: $FILE"
-                
-                # Remove any remaining quotes
-                FILE=$(echo "$FILE" | sed "s/^'"'"'//; s/'"'"'$//")
-                echo "Debug - Final file path: $FILE"
+                # Get file path directly from the second field
+                FILE=$(echo "{2}")
+                echo "Debug - Field 2 (file path): $FILE"
                 echo "---"
                 
                 if [ -f "$FILE" ]; then
@@ -151,8 +144,6 @@ if [ "$INTERACTIVE" = true ]; then
                     fi
                 else
                     echo "❌ File not found: $FILE"
-                    echo "Checking if directory exists: $(dirname "$FILE")"
-                    ls -la "$(dirname "$FILE")" 2>/dev/null | head -3
                 fi
             ' \
             --preview-window=down:wrap |

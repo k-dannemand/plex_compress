@@ -119,23 +119,10 @@ if [ "$INTERACTIVE" = true ]; then
         fzf --multi --read0 --print0 \
             --delimiter=$'\t' \
             --preview '
-                # Debug and extract file path - try multiple methods
+                # Extract file path and remove quotes
+                FILE=$(echo {} | cut -d$'"'"' '"'"' -f2- | sed "s/^'"'"'//; s/'"'"'$//")
                 echo "Debug - Raw input: {}"
                 echo "---"
-                
-                # Method 1: awk to split on tab
-                FILE=$(echo "{}" | awk -F"\t" "{print \$2}")
-                
-                # Method 2: If first method fails, try sed
-                if [ -z "$FILE" ] || [ ! -f "$FILE" ]; then
-                    FILE=$(echo "{}" | sed "s/^[^$(echo -e "\t")]*$(echo -e "\t")//")
-                fi
-                
-                # Method 3: If still fails, try different approach
-                if [ -z "$FILE" ] || [ ! -f "$FILE" ]; then
-                    FILE=$(echo "{}" | cut -s -f2-)
-                fi
-                
                 echo "Extracted file path: $FILE"
                 echo "---"
                 

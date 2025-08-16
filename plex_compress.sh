@@ -122,12 +122,9 @@ if [ "$INTERACTIVE" = true ]; then
             --preview '
                 # Get file path directly from the second field and remove quotes
                 FILE=$(echo "{2}" | sed "s/^'"'"'//; s/'"'"'$//")
-                echo "Debug - Field 2 (file path): {2}"
-                echo "Debug - After quote removal: $FILE"
-                echo "---"
                 
                 if [ -f "$FILE" ]; then
-                    echo "✅ File found: $FILE"
+                    echo "📁 File: $FILE"
                     echo "📏 Size: $(stat -c %s "$FILE" 2>/dev/null | numfmt --to=iec --suffix=B 2>/dev/null || echo "Unknown")"
                     echo
                     if command -v mediainfo >/dev/null 2>&1; then
@@ -145,8 +142,6 @@ if [ "$INTERACTIVE" = true ]; then
                     fi
                 else
                     echo "❌ File not found: $FILE"
-                    echo "Trying to list directory: $(dirname "$FILE")"
-                    ls -la "$(dirname "$FILE")" 2>/dev/null || echo "Directory not accessible"
                 fi
             ' \
             --preview-window=down:wrap |

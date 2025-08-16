@@ -20,6 +20,20 @@ A Bash script for compressing large video files (MKV/MP4) in a Plex library usin
 - mediainfo (interactive mode only)
 - numfmt
 
+## Interactive Mode Preview
+
+The interactive mode provides a rich file selection experience with detailed media information preview:
+
+![Interactive Mode Screenshot](Screenshot.png)
+
+The interface shows:
+- **File list**: Movies sorted by size with both file size and full path
+- **Preview panel**: Detailed media information including:
+  - File format and container details
+  - Video resolution, framerate, and codec information
+  - Audio format, channels, and language
+  - File size, duration, and bitrate
+  - Technical metadata for informed selection
 
 ## Flag Overview
 

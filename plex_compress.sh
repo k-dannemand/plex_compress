@@ -119,11 +119,18 @@ if [ "$INTERACTIVE" = true ]; then
         fzf --multi --read0 --print0 \
             --delimiter=$'\t' \
             --preview '
-                # Extract file path and remove quotes
-                FILE=$(echo {} | cut -d$'"'"' '"'"' -f2- | sed "s/^'"'"'//; s/'"'"'$//")
+                # Extract file path - remove size prefix and quotes
+                RAW_INPUT="{}"
+                # Remove leading quote if present
+                RAW_INPUT=$(echo "$RAW_INPUT" | sed "s/^'"'"'//")
+                # Remove trailing quote if present  
+                RAW_INPUT=$(echo "$RAW_INPUT" | sed "s/'"'"'$//")
+                # Extract everything after the first space (skip size)
+                FILE=$(echo "$RAW_INPUT" | sed "s/^[^ ]* //")
+                
                 echo "Debug - Raw input: {}"
-                echo "---"
-                echo "Extracted file path: $FILE"
+                echo "Debug - After quote removal: $RAW_INPUT"
+                echo "Debug - Extracted file path: $FILE"
                 echo "---"
                 
                 if [ -f "$FILE" ]; then

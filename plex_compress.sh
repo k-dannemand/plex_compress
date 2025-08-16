@@ -118,20 +118,30 @@ if [ "$INTERACTIVE" = true ]; then
         }' |
         fzf --multi --read0 --print0 \
             --delimiter=$'\t' \
+            --with-nth=1 \
             --preview '
-                FILE=$(echo {} | cut -f2-)
-                echo "📁 File: $FILE"
-                echo "📏 Size: $(stat -c %s "$FILE" | numfmt --to=iec --suffix=B)"
-                echo
-                mediainfo --Inform="
-                    General;🎬 Format: %{Format}
-                    📊 Bitrate: %{OverallBitRate/String}
-                    ⏱ Duration: %{Duration/String}
+                # More robust file path extraction
+                FILE=$(echo {} | sed "s/^[^\t]*\t//")
+                if [ -f "$FILE" ]; then
+                    echo "📁 File: $FILE"
+                    echo "📏 Size: $(stat -c %s "$FILE" 2>/dev/null | numfmt --to=iec --suffix=B 2>/dev/null || echo "Unknown")"
+                    echo
+                    if command -v mediainfo >/dev/null 2>&1; then
+                        mediainfo --Inform="
+                            General;🎬 Format: %Format%
+                            📊 Bitrate: %OverallBitRate/String%
+                            ⏱ Duration: %Duration/String%
 
-                    Video;🎥 Video: %{Format} %{Width}x%{Height} %{FrameRate/String}
+                            Video;🎥 Video: %Format% %Width%x%Height% %FrameRate/String%
 
-                    Audio;🔊 Audio: %{Format} %{Channel(s)/String} (%{Language})
-                " "$FILE" 2>/dev/null
+                            Audio;🔊 Audio: %Format% %Channel\(s\)/String% (%Language%)
+                        " "$FILE" 2>/dev/null || echo "Could not read media info"
+                    else
+                        echo "mediainfo not available"
+                    fi
+                else
+                    echo "File not found: $FILE"
+                fi
             ' \
             --preview-window=down:wrap |
         awk -v RS='\0' -v ORS='\0' -F'\t' '{print $2}'

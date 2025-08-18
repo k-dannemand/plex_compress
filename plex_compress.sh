@@ -28,6 +28,14 @@ OPTIONS:
     --batch-season          Process entire seasons at once
     -h, --help              Show this help
 
+COMBINED FLAGS:
+    You can combine short flags for convenience:
+    -ditrs /path            Same as: -d -i -t -r -s /path
+    -it                     Same as: -i -t
+    -dr                     Same as: -d -r
+    
+    Note: When using -s in combinations, it must be the last flag (e.g., -ditrs /path)
+
 SIZE FORMATS:
     Use standard suffixes: 500M, 1G, 2.5G, etc.
 
@@ -43,6 +51,7 @@ EXAMPLES:
     $0 --interactive --min-size 500M     # Interactive with smaller files
     $0 --tv-mode --recursive             # TV show mode with recursive search
     $0 --interactive --batch-season      # Interactive season selection
+    $0 -ditrs /tv-shows                  # Combined flags: dry-run + interactive + TV + recursive + source
     $0 --dry-run --source /tv-shows      # Test with TV show directory
 EOF
 }
@@ -107,6 +116,38 @@ get_directory_stats() {
 # --- Parameters ---
 while [[ $# -gt 0 ]]; do
     case $1 in
+        # Handle combined short flags (e.g., -ditrs)
+        -[a-zA-Z]*)
+            if [[ ${#1} -gt 2 ]]; then
+                # This is a combined flag like -ditrs
+                flags="${1#-}"  # Remove the leading dash
+                for (( i=0; i<${#flags}; i++ )); do
+                    flag="${flags:$i:1}"
+                    case $flag in
+                        d) DRYRUN=true; echo "=== DRY-RUN mode ===" ;;
+                        i) INTERACTIVE=true; echo "=== INTERACTIVE mode ===" ;;
+                        t) TV_MODE=true; MIN_SIZE="+500M"; SIZE_LIMIT="+2G"; echo "=== TV MODE (optimized for TV shows) ===" ;;
+                        r) RECURSIVE=true; echo "=== RECURSIVE search enabled ===" ;;
+                        s) 
+                            # Special handling for -s since it needs an argument
+                            if [[ $i -eq $((${#flags} - 1)) ]]; then
+                                # -s is the last flag in combination, get next argument
+                                SOURCE_DIR="$2"
+                                shift
+                            else
+                                echo "Error: -s must be the last flag in combination (e.g., -ditrs /path)"
+                                exit 1
+                            fi
+                            ;;
+                        h) show_help; exit 0 ;;
+                        *) echo "Unknown flag: -$flag"; show_help; exit 1 ;;
+                    esac
+                done
+                shift
+                continue
+            fi
+            # Fall through to individual flag handling if not combined
+            ;&
         -d|--dry-run)
             DRYRUN=true
             echo "=== DRY-RUN mode ==="

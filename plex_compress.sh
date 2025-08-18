@@ -250,15 +250,24 @@ if [ "$INTERACTIVE" = true ]; then
             # Format path for TV mode
             path = $2;
             if (tv_mode == "true") {
+                print "DEBUG: Original path: " path > "/dev/stderr";
+                print "DEBUG: Source: " source > "/dev/stderr";
+                
                 # Remove source prefix to get relative path
                 if (index(path, source "/") == 1) {
                     relative_path = substr(path, length(source) + 2);
+                    print "DEBUG: Prefix found, relative_path: " relative_path > "/dev/stderr";
                 } else {
                     relative_path = path;
+                    print "DEBUG: No prefix match, using full path: " relative_path > "/dev/stderr";
                 }
                 
                 # Split relative path into components
                 split(relative_path, parts, "/");
+                print "DEBUG: Relative parts count: " length(parts) > "/dev/stderr";
+                for (i = 1; i <= length(parts); i++) {
+                    print "DEBUG: Relative Part " i ": [" parts[i] "]" > "/dev/stderr";
+                }
                 
                 # Format based on directory structure
                 if (length(parts) >= 3 && match(parts[2], /[Ss]eason|[Ss][0-9]/)) {

@@ -251,15 +251,22 @@ if [ "$INTERACTIVE" = true ]; then
             path = $2;
             if (tv_mode == "true") {
                 # Remove source prefix and format for TV display
-                gsub("^" source "/", "", path);
-                if (match(path, /[Ss]eason|[Ss][0-9]/)) {
-                    split(path, parts, "/");
-                    if (length(parts) >= 3) {
-                        printf "%-8s\t📺 %s ▸ %s ▸ %s\t%s\0", hsize, parts[1], parts[2], parts[3], $2;
-                    } else {
-                        printf "%-8s\t📺 %s\t%s\0", hsize, path, $2;
-                    }
+                if (substr(path, 1, length(source) + 1) == source "/") {
+                    path = substr(path, length(source) + 2);
+                }
+                
+                # Split path into components
+                split(path, parts, "/");
+                
+                # Format based on directory structure
+                if (length(parts) >= 3 && match(parts[2], /[Ss]eason|[Ss][0-9]/)) {
+                    # TV show with season: Show ▸ Season ▸ Episode
+                    printf "%-8s\t📺 %s ▸ %s ▸ %s\t%s\0", hsize, parts[1], parts[2], parts[3], $2;
+                } else if (length(parts) >= 2) {
+                    # TV show without clear season: Show ▸ Episode
+                    printf "%-8s\t📺 %s ▸ %s\t%s\0", hsize, parts[1], parts[2], $2;
                 } else {
+                    # Single file
                     printf "%-8s\t🎬 %s\t%s\0", hsize, path, $2;
                 }
             } else {

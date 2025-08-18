@@ -250,22 +250,15 @@ if [ "$INTERACTIVE" = true ]; then
             # Format path for TV mode
             path = $2;
             if (tv_mode == "true") {
-                # Debug: print original path to stderr
-                print "DEBUG: Original path: " path > "/dev/stderr";
-                print "DEBUG: Source: " source > "/dev/stderr";
-                
-                # Remove source prefix and format for TV display
-                if (substr(path, 1, length(source) + 1) == source "/") {
-                    path = substr(path, length(source) + 2);
-                    print "DEBUG: After prefix removal: " path > "/dev/stderr";
+                # Remove source prefix to get relative path
+                if (index(path, source "/") == 1) {
+                    relative_path = substr(path, length(source) + 2);
+                } else {
+                    relative_path = path;
                 }
                 
-                # Split path into components
-                split(path, parts, "/");
-                print "DEBUG: Parts count: " length(parts) > "/dev/stderr";
-                for (i = 1; i <= length(parts); i++) {
-                    print "DEBUG: Part " i ": " parts[i] > "/dev/stderr";
-                }
+                # Split relative path into components
+                split(relative_path, parts, "/");
                 
                 # Format based on directory structure
                 if (length(parts) >= 3 && match(parts[2], /[Ss]eason|[Ss][0-9]/)) {
@@ -276,7 +269,7 @@ if [ "$INTERACTIVE" = true ]; then
                     printf "%-8s\t📺 %s ▸ %s\t%s\0", hsize, parts[1], parts[2], $2;
                 } else {
                     # Single file
-                    printf "%-8s\t🎬 %s\t%s\0", hsize, path, $2;
+                    printf "%-8s\t🎬 %s\t%s\0", hsize, relative_path, $2;
                 }
             } else {
                 printf "%-8s\t%s\t%s\0", hsize, path, $2;

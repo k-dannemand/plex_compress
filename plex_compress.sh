@@ -250,13 +250,22 @@ if [ "$INTERACTIVE" = true ]; then
             # Format path for TV mode
             path = $2;
             if (tv_mode == "true") {
+                # Debug: print original path to stderr
+                print "DEBUG: Original path: " path > "/dev/stderr";
+                print "DEBUG: Source: " source > "/dev/stderr";
+                
                 # Remove source prefix and format for TV display
                 if (substr(path, 1, length(source) + 1) == source "/") {
                     path = substr(path, length(source) + 2);
+                    print "DEBUG: After prefix removal: " path > "/dev/stderr";
                 }
                 
                 # Split path into components
                 split(path, parts, "/");
+                print "DEBUG: Parts count: " length(parts) > "/dev/stderr";
+                for (i = 1; i <= length(parts); i++) {
+                    print "DEBUG: Part " i ": " parts[i] > "/dev/stderr";
+                }
                 
                 # Format based on directory structure
                 if (length(parts) >= 3 && match(parts[2], /[Ss]eason|[Ss][0-9]/)) {

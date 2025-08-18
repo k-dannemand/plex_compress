@@ -251,15 +251,22 @@ if [ "$INTERACTIVE" = true ]; then
             path = $2;
             if (tv_mode == "true") {
                 print "DEBUG: Original path: " path > "/dev/stderr";
-                print "DEBUG: Source: " source > "/dev/stderr";
+                print "DEBUG: Source: [" source "]" > "/dev/stderr";
                 
                 # Remove source prefix to get relative path
-                if (index(path, source "/") == 1) {
-                    relative_path = substr(path, length(source) + 2);
-                    print "DEBUG: Prefix found, relative_path: " relative_path > "/dev/stderr";
+                # Check if path starts with source (with or without trailing slash)
+                source_with_slash = source;
+                if (substr(source, length(source), 1) != "/") {
+                    source_with_slash = source "/";
+                }
+                print "DEBUG: Source with slash: [" source_with_slash "]" > "/dev/stderr";
+                
+                if (index(path, source_with_slash) == 1) {
+                    relative_path = substr(path, length(source_with_slash) + 1);
+                    print "DEBUG: Prefix found, relative_path: [" relative_path "]" > "/dev/stderr";
                 } else {
                     relative_path = path;
-                    print "DEBUG: No prefix match, using full path: " relative_path > "/dev/stderr";
+                    print "DEBUG: No prefix match, using full path: [" relative_path "]" > "/dev/stderr";
                 }
                 
                 # Split relative path into components
